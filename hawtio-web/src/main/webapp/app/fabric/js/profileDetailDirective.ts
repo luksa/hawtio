@@ -41,7 +41,8 @@ module Fabric {
       $scope.deleteThingDialog = false;
       $scope.changeParentsDialog = false;
       $scope.removeParentDialog = false;
-      $scope.newThingName = '';
+      $scope.newBundleName = '';
+      $scope.newRepoName = '';
       $scope.selectedParents = [];
 
       $scope.profilePath = Fabric.profilePath;
@@ -74,7 +75,8 @@ module Fabric {
 
       $scope.$watch('activeTab', (newValue, oldValue) => {
         if (newValue !== oldValue) {
-          $scope.newThingName = '';
+          $scope.newBundleName = '';
+          $scope.newRepoName = '';
         }
       });
 
@@ -91,35 +93,50 @@ module Fabric {
       });
 
       // TODO, should complete URL handlers too
-      $scope.doCompletionFabric = (something) => {
+      $scope.doBundleCompletionFabric = (something) => {
         if (something.startsWith("mvn:")) {
-          $scope.prefix = "mvn:";
+          $scope.bundlePrefix = "mvn:";
           return Maven.completeMavenUri($q, $scope, workspace, jolokia, something.from(4));
         }
-        $scope.prefix = "";
+        $scope.bundlePrefix = "";
         return $q.when([]);
       };
 
-      $scope.uriParts = [];
+      $scope.doRepoCompletionFabric = (something) => {
+        if (something.startsWith("mvn:")) {
+          $scope.repoPrefix = "mvn:";
+          return Maven.completeMavenUri($q, $scope, workspace, jolokia, something.from(4));
+        }
+        $scope.repoPrefix = "";
+        return $q.when([]);
+      };
 
-      $scope.$watch('newThingName', (newValue, oldValue) => {
+      $scope.bundleUriParts = [];
+      $scope.$watch('newBundleName', (newValue, oldValue) => {
         if (newValue !== oldValue) {
-          $scope.uriParts = newValue.split("/");
+          $scope.bundleUriParts = newValue.split("/");
         }
       });
 
-      $scope.$watch('uriParts', (newValue, oldValue) => {
+      $scope.repoUriParts = [];
+      $scope.$watch('newRepoName', (newValue, oldValue) => {
         if (newValue !== oldValue) {
-          if (!$scope.prefix || $scope.prefix === '') {
+          $scope.repoUriParts = newValue.split("/");
+        }
+      });
+
+      $scope.$watch('bundleUriParts', (newValue, oldValue) => {
+        if (newValue !== oldValue) {
+          if (!$scope.bundlePrefix || $scope.bundlePrefix === '') {
             return;
           }
-          if (newValue && newValue.length > 0 && !newValue.first().startsWith($scope.prefix)) {
+          if (newValue && newValue.length > 0 && !newValue.first().startsWith($scope.bundlePrefix)) {
             /*
             console.log("newValue: ", newValue);
             console.log("oldValue: ", oldValue);
-            console.log("prefix: ", $scope.prefix);
+            console.log("bundlePrefix: ", $scope.bundlePrefix);
             */
-            if (newValue.first() === "" || newValue.first().length < $scope.prefix.length) {
+            if (newValue.first() === "" || newValue.first().length < $scope.bundlePrefix.length) {
               return;
             }
             if (oldValue.length === 0) {
@@ -127,10 +144,38 @@ module Fabric {
             }
             // a completion occurred...
             if (oldValue.length === 1) {
-              $scope.newThingName = $scope.prefix + newValue.first();
+              $scope.newBundleName = $scope.bundlePrefix + newValue.first();
             } else {
               var merged = oldValue.first(oldValue.length - 1).include(newValue.first());
-              $scope.newThingName = merged.join('/');
+              $scope.newBundleName = merged.join('/');
+            }
+          }
+        }
+      }, true);
+
+      $scope.$watch('repoUriParts', (newValue, oldValue) => {
+        if (newValue !== oldValue) {
+          if (!$scope.repoPrefix || $scope.repoPrefix === '') {
+            return;
+          }
+          if (newValue && newValue.length > 0 && !newValue.first().startsWith($scope.repoPrefix)) {
+            /*
+            console.log("newValue: ", newValue);
+            console.log("oldValue: ", oldValue);
+            console.log("repoPrefix: ", $scope.repoPrefix);
+            */
+            if (newValue.first() === "" || newValue.first().length < $scope.repoPrefix.length) {
+              return;
+            }
+            if (oldValue.length === 0) {
+              return;
+            }
+            // a completion occurred...
+            if (oldValue.length === 1) {
+              $scope.newRepoName = $scope.repoPrefix + newValue.first();
+            } else {
+              var merged = oldValue.first(oldValue.length - 1).include(newValue.first());
+              $scope.newRepoName = merged.join('/');
             }
           }
         }
@@ -215,14 +260,14 @@ module Fabric {
         $location.url(location);
       };
 
-      $scope.addNewThing = (title, type, current) => {
-        if (Core.isBlank($scope.newThingName)) {
+      $scope.addNewThing = (title, type, current, newThingName) => {
+        if (Core.isBlank(newThingName)) {
           return;
         }
         $scope.thingName = title;
         $scope.currentThing = current;
         $scope.currentThingType = type;
-        $scope.doAddThing();
+        $scope.doAddThing(newThingName);
       };
 
       $scope.deleteThing = (title, type, current, item) => {
@@ -255,7 +300,8 @@ module Fabric {
           method: 'POST',
           success: () => {
             Core.notification('success', success + ' ' + thing);
-            $scope.newThingName = '';
+            $scope.newBundleName = '';
+            $scope.newRepoName = '';
             Core.$apply($scope);
           },
           error: (response) => {
@@ -272,15 +318,15 @@ module Fabric {
       };
 
 
-      $scope.doAddThing = () => {
-        if (!$scope.currentThing.any($scope.newThingName)) {
+      $scope.doAddThing = (newThingName) => {
+        if (!$scope.currentThing.any(newThingName)) {
 
-          $scope.currentThing.push($scope.newThingName);
+          $scope.currentThing.push(newThingName);
           $scope.addThingDialog = false;
-          $scope.callSetProfileThing('Added', 'add', $scope.newThingName);
+          $scope.callSetProfileThing('Added', 'add', newThingName);
 
         } else {
-          Core.notification('error', 'There is already a ' + $scope.thingName + ' with the name ' + $scope.newThingName);
+          Core.notification('error', 'There is already a ' + $scope.thingName + ' with the name ' + newThingName);
         }
       };
 
