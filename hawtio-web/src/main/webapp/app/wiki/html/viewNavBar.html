@@ -73,6 +73,16 @@
           <i class="icon-edit"></i> Edit</a>
       </li>
       <li class="pull-right" hawtio-show object-name="{{gitMBean}}" method-name="write">
+        <a ng-href="{{downloadLink()}}" ng-hide="!directory" title="Download this folder as .zip"
+           data-placement="bottom">
+          <i class="icon-download"></i> Download as zip</a>
+      </li>
+      <li class="pull-right" hawtio-show object-name="{{gitMBean}}" method-name="write">
+        <a ng-href="{{downloadLink()}}{{hash}}" ng-hide="!directory" title="Download this folder as .zip"
+           data-placement="bottom">
+          <i class="icon-download"></i> Download as zip</a>
+      </li>
+      <li class="pull-right" hawtio-show object-name="{{gitMBean}}" method-name="write">
         <a ng-href="{{createLink()}}{{hash}}"
            title="Create new page"
            data-placement="bottom">

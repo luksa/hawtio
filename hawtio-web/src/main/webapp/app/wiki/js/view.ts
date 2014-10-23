@@ -214,6 +214,12 @@ module Wiki {
     };
 
 
+    $scope.downloadLink = () => {
+      var zipURL = 'git/' + $scope.branch;
+      zipURL = UrlHelpers.join(zipURL, $scope.pageId);
+      return zipURL + ".zip";
+    };
+
     $scope.childLink = (child) => {
       var start = startLink($scope.branch);
       var prefix = start + "/view";
